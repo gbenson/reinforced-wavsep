@@ -62,9 +62,15 @@ def find_map(reinforced_cat: str):
 
 
 
+class my_dialect(csv.excel):
+    lineterminator = csv.unix_dialect.lineterminator
+csv.register_dialect("excelnix", my_dialect)
+
+
+
 def write_csv(rows):
     with open(RESULT_NAME, 'w', newline =  '') as csvfile: 
-        csvwriter = csv.writer(csvfile)
+        csvwriter = csv.writer(csvfile, dialect="excelnix")
         csvwriter.writerow(header)
         csvwriter.writerows(rows)
 

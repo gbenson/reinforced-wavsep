@@ -1,12 +1,15 @@
 import csv
 import os
 import sys
+from dataclasses import dataclass
+from typing import Optional
 from har_manager import print_from_har, send_from_har, urls_from_har
 import urllib.parse
 from my_har_parser import get_har_file, get_categories, get_har_sessions
 
 header = ['# test name','category', 'sub-cat', 'real vulnerability', 'cwe','Benchmark version: 1.8','date']
 RESULT_NAME = "expected_results_reinforced_wavsep-1.8.csv"
+RESULT_NAME2 = "expected_results_reinforced_wavsep-1.8-gbenson.csv"
 
 
 
@@ -132,7 +135,7 @@ for category, sessions in har_sessions.items():
         m = find_map(category)
         urls = get_urls(category, sessions)
         for url in urls:
-            print(f"    URL {url}")
+            #print(f"    URL {url}")
             u = url['url']
             session = url['session'].rstrip(".har")
             testname = extract_testname(u)
@@ -144,6 +147,10 @@ for category, sessions in har_sessions.items():
             """
             if testname.startswith('Case'):
                 rows.append([testname, m.owasp_cat, session, 'true', m.cwe])
+            else:
+                print("hello", u)
+                rows.append([None])
+            rows[-1].append(u)
 
     else:
         for s in sessions: 
@@ -156,6 +163,31 @@ for category, sessions in har_sessions.items():
                 testname = extract_testname(u)
                 if testname.startswith('Case'):
                     rows.append([testname,  m.owasp_cat, s, 'false', m.cwe])
+                else:
+                    raise ValueError(u)
+                rows[-1].append(u)
 
-write_csv(rows)
-p("File written to {}".format(RESULT_NAME))
+if False:
+    write_csv(rows)
+    p("File written to {}".format(RESULT_NAME))
+
+
+@dataclass
+class GBTestCase:
+    name: str
+    owasp_category: str
+    is_real_vuln: bool
+    cwe_number: int
+    main_url: str
+    entry_url: Optional[str]
+
+    @classmethod
+    def munch_rows(cls, rows):
+        extra = []
+        for row_id, row in enumerate(rows):
+            if row[0] is None:
+                extra = row[1:]
+                continue
+            yield cls(*(row + extra))
+            extra = []
+

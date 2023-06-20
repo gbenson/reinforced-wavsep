@@ -5,7 +5,7 @@ from har_manager import print_from_har, send_from_har, urls_from_har
 import urllib.parse
 from my_har_parser import get_har_file, get_categories, get_har_sessions
 
-header = ['# test name', 'category', 'real vulnerability', 'cwe','Benchmark version: 1.8','date']
+header = ['# test name','category', 'sub-cat', 'real vulnerability', 'cwe','Benchmark version: 1.8','date']
 RESULT_NAME = "expected_results_reinforced_wavsep-1.8.csv"
 
 
@@ -113,7 +113,8 @@ def get_urls(category, sessions):
     urls = []
     for s in sessions: 
         filepath = get_har_file(category, s)
-        urls = urls + urls_from_har(filepath)
+        new_urls = urls_from_har(filepath)
+        urls = urls + [{"url": url, "session": s} for url in new_urls]
     return urls
 
 
@@ -124,7 +125,10 @@ for category, sessions in har_sessions.items():
     if category != 'false-positives':
         m = find_map(category)
         urls = get_urls(category, sessions)
-        for u in urls:
+        for url in urls:
+            print(f"    URL {url}")
+            u = url['url']
+            session = url['session'].rstrip(".har")
             testname = extract_testname(u)
             """ 
             # test name, category, real vulnerability, cwe, Benchmark version: 1.2, 2016-06-1
@@ -133,7 +137,7 @@ for category, sessions in har_sessions.items():
 
             """
             if testname.startswith('Case'):
-                rows.append([testname, m.owasp_cat, 'true', m.cwe])
+                rows.append([testname, m.owasp_cat, session, 'true', m.cwe])
 
     else:
         for s in sessions: 
@@ -145,7 +149,7 @@ for category, sessions in har_sessions.items():
             for u in urls: 
                 testname = extract_testname(u)
                 if testname.startswith('Case'):
-                    rows.append([testname, m.owasp_cat, 'false', m.cwe])
+                    rows.append([testname,  m.owasp_cat, s, 'false', m.cwe])
 
 write_csv(rows)
 p("File written to {}".format(RESULT_NAME))

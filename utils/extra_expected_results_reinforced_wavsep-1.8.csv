@@ -1,0 +1,4 @@
+# test name,category,sub-cat,real vulnerability,cwe,Benchmark version: 1.8,date
+Case01-js3,xss,true,79
+Case02-js4_dq,xss,true,79
+Case03-js6_sq,xss,true,79

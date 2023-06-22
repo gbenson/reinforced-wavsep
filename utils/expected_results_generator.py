@@ -8,8 +8,7 @@ import urllib.parse
 from my_har_parser import get_har_file, get_categories, get_har_sessions
 
 header = ['# test name','category', 'sub-cat', 'real vulnerability', 'cwe','Benchmark version: 1.8','date']
-RESULT_NAME = "expected_results_reinforced_wavsep-1.8.csv"
-RESULT_NAME2 = "expected_results_reinforced_wavsep-1.8-gbenson.csv"
+RESULT_NAME = "extra_expected_results_reinforced_wavsep-1.8.csv"
 
 
 
@@ -115,7 +114,7 @@ def extract_testname(url):
 
 p("Get har sessions")
 rows = []
-
+special_rows = []
 
 
 def get_urls(category, sessions):
@@ -123,7 +122,11 @@ def get_urls(category, sessions):
     for s in sessions: 
         filepath = get_har_file(category, s)
         new_urls = urls_from_har(filepath)
-        urls = urls + [{"url": url, "session": s} for url in new_urls]
+        urls = urls + [{
+            "url": url,
+            "session": s,
+            "filepath": filepath,
+        } for url in new_urls]
     return urls
 
 
@@ -145,12 +148,25 @@ for category, sessions in har_sessions.items():
                 BenchmarkTest00002,pathtraver,true,22
 
             """
+            prepend_testname = {
+                "js3": "Case01-",
+                "js4_dq": "Case02-",
+                "js6_sq": "Case03-",
+            }
+            prefix = prepend_testname.get(testname, None)
+            if prefix is not None:
+                testname = prefix + testname
+
             if testname.startswith('Case'):
                 rows.append([testname, m.owasp_cat, session, 'true', m.cwe])
-            else:
-                print("hello", u)
-                rows.append([None])
-            rows[-1].append(u)
+                if prefix is not None:
+                    special_rows.append(rows[-1])
+                continue
+
+            print()
+            print(testname)
+            print(url["filepath"])
+            print("hello", u)
 
     else:
         for s in sessions: 
@@ -165,11 +181,21 @@ for category, sessions in har_sessions.items():
                     rows.append([testname,  m.owasp_cat, s, 'false', m.cwe])
                 else:
                     raise ValueError(u)
-                rows[-1].append(u)
 
 if False:
-    write_csv(rows)
-    p("File written to {}".format(RESULT_NAME))
+    for row, next_row in zip(rows, rows[1:] + [None]):
+        if len(row) != 2:
+            continue
+        print(row)
+        print(next_row)
+        print()
+
+print()
+write_csv([
+    [name, oc, irv, cwe]
+    for name, oc, s, irv, cwe in sorted(special_rows)
+])
+p("File written to {}".format(RESULT_NAME))
 
 
 @dataclass
